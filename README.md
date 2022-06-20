@@ -17,7 +17,7 @@ To do this:
 2. Build the app in production mode:
 
 ```
-> ng build --prod
+> ng build -c production
 ```
 
 3. Serve it:
