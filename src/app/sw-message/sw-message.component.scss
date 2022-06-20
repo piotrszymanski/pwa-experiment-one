@@ -1,0 +1,14 @@
+:host {
+  position: fixed;
+  bottom: 10px;
+  background-color: blanchedalmond;
+  padding: 0.5rem;
+  min-width: 500px;
+  opacity: 1;
+
+  transition: opacity 1s ease-in-out;
+}
+
+:host.hidden {
+  opacity: 0;
+}
