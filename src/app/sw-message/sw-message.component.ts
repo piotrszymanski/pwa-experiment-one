@@ -1,4 +1,4 @@
-import { Component, HostBinding, OnInit } from '@angular/core';
+import { Component, HostBinding, HostListener, OnInit } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
 import { timer } from 'rxjs';
 
@@ -48,6 +48,18 @@ export class SwMessageComponent implements OnInit {
         `An unrecoverable error was encountered. Please refresh the app.`
       );
     });
+  }
+
+  // The following two host listeners can detect when the network status changes.
+
+  @HostListener('window:online', ['$event'])
+  handleOnline(): void {
+    this.showMessage('You are now on-line.');
+  }
+
+  @HostListener('window:offline', ['$event'])
+  handleOffline(): void {
+    this.showMessage('You are now off-line.');
   }
 
   showMessage(message: string): void {
