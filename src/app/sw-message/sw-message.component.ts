@@ -1,7 +1,6 @@
 import { Component, HostBinding, OnInit } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
-import { Subject, timer } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { timer } from 'rxjs';
 
 @Component({
   selector: 'app-sw-message',
@@ -13,20 +12,29 @@ export class SwMessageComponent implements OnInit {
 
   message = '';
 
-  private readonly stop$ = new Subject<any>();
+  private readonly queue: string[] = [];
 
   constructor(private readonly updates: SwUpdate) {}
 
   ngOnInit(): void {
-    // This event seems to never fire?
-    this.updates.activated.subscribe((evt) => {
-      this.showMessage(
-        `Refresh to see the latest app - version ${evt.current.hash}`
-      );
-    });
-
-    this.updates.available.subscribe((evt) => {
-      this.showMessage(`Downloading latest app version: ${evt.available.hash}`);
+    this.updates.versionUpdates.subscribe((evt) => {
+      switch (evt.type) {
+        case 'VERSION_DETECTED':
+          this.showMessage(
+            `Downloading latest app version: ${evt.version.hash}`
+          );
+          return;
+        case 'VERSION_READY':
+          this.showMessage(
+            `Refresh to see the latest app - version ${evt.latestVersion.hash}`
+          );
+          return;
+        case 'VERSION_INSTALLATION_FAILED':
+          this.showMessage(
+            `Failed to install app version: ${evt.version.hash}`
+          );
+          return;
+      }
     });
 
     if (this.updates.isEnabled) {
@@ -43,16 +51,28 @@ export class SwMessageComponent implements OnInit {
   }
 
   showMessage(message: string): void {
-    // Abort the fadeout of the previous message.
-    this.stop$.next();
+    this.queue.push(message);
 
-    this.message = message;
+    if (this.queue.length === 1) {
+      this.nextMessage();
+    }
+  }
+
+  private nextMessage(): void {
+    // Show the message.
+    this.message = this.queue[0];
     this.class = '';
 
-    timer(2000)
-      .pipe(takeUntil(this.stop$))
-      .subscribe(() => {
-        this.class = 'hidden';
-      });
+    // Wait before hiding the message.
+    timer(2000).subscribe(() => {
+      // Hide the message.
+      this.class = 'hidden';
+
+      // If there are any more messages in the queue, wait a bit before showing the next one.
+      this.queue.shift();
+      if (this.queue.length > 0) {
+        timer(1000).subscribe(() => this.nextMessage());
+      }
+    });
   }
 }
